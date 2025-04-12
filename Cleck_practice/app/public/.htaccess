@@ -1,0 +1,17 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Base rewrite for subfolder installation
+    RewriteBase /TeamProject-L5_CleckBasket_G13/Cleck_practice/app/public/
+    
+    # Redirect all requests to index.php
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+    
+    # Prevent access to hidden files
+    RewriteRule ^\. - [F]
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
