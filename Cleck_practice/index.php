@@ -22,9 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         ['id' => 9, 'name' => 'Chicken Breast', 'price' => 10.00, 'stock' => 7],
     ];
 
-    $product = array_filter($products, fn($p) => $p['id'] == $product_id)[array_key_first(array_filter($products, fn($p) => $p['id'] == $product_id))];
+    // Find product
+    $product = array_filter($products, fn($p) => $p['id'] == $product_id);
+    $product = reset($product);
 
-    if ($product && $quantity <= $product['stock']) {
+    if ($product && $quantity > 0 && $quantity <= $product['stock']) {
         if (isset($_SESSION['cart'][$product_id])) {
             $_SESSION['cart'][$product_id]['quantity'] += $quantity;
         } else {
@@ -35,6 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                 'stock' => $product['stock']
             ];
         }
+        // Force session write
+        session_write_close();
+        // Redirect to same page
+        header("Location: index.php");
+        exit;
     }
 }
 ?>
@@ -126,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                         const category = categories[index];
                         container.innerHTML += `
                             <div class="flex-none">
-                                <div class="w-32 h-32 md:w-40 md:h-40 bg-white rounded-full shadow-md flex flex-col items-center justify-center p-4 hover:shadow-lg transition duration-300">
+                                <div class="w-32 h-32 md:w-40 md:h-40 bg-white rounded-full shadow-md flex debatable flex-col items-center justify-center p-4 hover:shadow-lg transition duration-300">
                                     <h3 class="text-sm md:text-base font-semibold text-brown-800 text-center">${category.name}</h3>
                                     <p class="text-xs md:text-sm text-brown-600 text-center">${category.product_count} product${category.product_count !== 1 ? 's' : ''}</p>
                                     <a href="shop.php?category=${encodeURIComponent(category.name)}" class="mt-2 text-xs md:text-sm bg-yellow-600 text-brown-800 px-3 py-1 rounded-full hover:bg-yellow-700 transition duration-300">Explore</a>
@@ -167,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                         <div class="h-48 bg-stone-200 rounded-lg mb-4 flex items-center justify-center">
                             <span class="text-brown-600">Image Placeholder</span>
                         </div>
-                        <h3 class="text-lg font-semibold text-brown-800">' . $product['name'] . '</h3>
+                        <h3 class="text-lg font-semibold text-brown-800">' . htmlspecialchars($product['name']) . '</h3>
                         <p class="text-yellow-600 font-medium">$' . number_format($product['price'], 2) . '</p>
                         <p class="text-brown-600">In Stock: ' . $product['stock'] . '</p>
                         <form method="POST" class="mt-3">
@@ -199,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                         <div class="h-48 bg-stone-200 rounded-lg mb-4 flex items-center justify-center">
                             <span class="text-brown-600">Image Placeholder</span>
                         </div>
-                        <h3 class="text-lg font-semibold text-brown-800">' . $product['name'] . '</h3>
+                        <h3 class="text-lg font-semibold text-brown-800">' . htmlspecialchars($product['name']) . '</h3>
                         <p class="text-yellow-600 font-medium">$' . number_format($product['price'], 2) . '</p>
                         <p class="text-brown-600">In Stock: ' . $product['stock'] . '</p>
                         <form method="POST" class="mt-3">
@@ -231,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                         <div class="h-48 bg-stone-200 rounded-lg mb-4 flex items-center justify-center">
                             <span class="text-brown-600">Image Placeholder</span>
                         </div>
-                        <h3 class="text-lg font-semibold text-brown-800">' . $product['name'] . '</h3>
+                        <h3 class="text-lg font-semibold text-brown-800">' . htmlspecialchars($product['name']) . '</h3>
                         <p class="text-yellow-600 font-medium">$' . number_format($product['price'], 2) . '</p>
                         <p class="text-brown-600">In Stock: ' . $product['stock'] . '</p>
                         <form method="POST" class="mt-3">

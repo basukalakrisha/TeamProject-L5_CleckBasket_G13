@@ -22,9 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         ['id' => 9, 'name' => 'Croissant', 'category' => 'Bakery', 'shop' => 'Shop 4', 'price' => 2.50, 'stock' => 20],
     ];
 
-    $product = array_filter($products, fn($p) => $p['id'] == $product_id)[array_key_first(array_filter($products, fn($p) => $p['id'] == $product_id))];
+    // Find product
+    $product = array_filter($products, fn($p) => $p['id'] == $product_id);
+    $product = reset($product); // Get first matching product
 
-    if ($product && $quantity <= $product['stock']) {
+    if ($product && $quantity > 0 && $quantity <= $product['stock']) {
         if (isset($_SESSION['cart'][$product_id])) {
             $_SESSION['cart'][$product_id]['quantity'] += $quantity;
         } else {
@@ -35,6 +37,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                 'stock' => $product['stock']
             ];
         }
+        // Force session write
+        session_write_close();
+        // Redirect to same page with current filters to refresh cart count
+        $query_string = http_build_query($_GET);
+        header("Location: shop.php" . ($query_string ? "?$query_string" : ""));
+        exit;
     }
 }
 ?>
@@ -163,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                             <div class="h-48 bg-stone-200 rounded-lg mb-4 flex items-center justify-center">
                                 <span class="text-brown-600">Image Placeholder</span>
                             </div>
-                            <h3 class="text-lg font-semibold text-brown-800">' . $product['name'] . '</h3>
+                            <h3 class="text-lg font-semibold text-brown-800">' . htmlspecialchars($product['name']) . '</h3>
                             <p class="text-yellow-600 font-medium">$' . number_format($product['price'], 2) . '</p>
                             <p class="text-brown-600">In Stock: ' . $product['stock'] . '</p>
                             <form method="POST" class="mt-3">

@@ -10,16 +10,32 @@ if (!isset($_SESSION['cart'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_cart'])) {
         $product_id = $_POST['product_id'];
-        $quantity = (int)$_POST['quantity'];
-        if ($quantity > 0 && isset($_SESSION['cart'][$product_id]) && $quantity <= $_SESSION['cart'][$product_id]['stock']) {
-            $_SESSION['cart'][$product_id]['quantity'] = $quantity;
+        $action = $_POST['action'];
+        if (isset($_SESSION['cart'][$product_id])) {
+            $current_quantity = $_SESSION['cart'][$product_id]['quantity'];
+            $stock = $_SESSION['cart'][$product_id]['stock'];
+
+            if ($action === 'increase' && $current_quantity < $stock) {
+                $_SESSION['cart'][$product_id]['quantity']++;
+                session_write_close(); // Ensure session is saved
+                header("Location: cart.php"); // Redirect to refresh page
+                exit;
+            } elseif ($action === 'decrease' && $current_quantity > 1) {
+                $_SESSION['cart'][$product_id]['quantity']--;
+                session_write_close(); // Ensure session is saved
+                header("Location: cart.php"); // Redirect to refresh page
+                exit;
+            }
         }
     } elseif (isset($_POST['remove_item'])) {
         $product_id = $_POST['product_id'];
         unset($_SESSION['cart'][$product_id]);
+        session_write_close(); // Ensure session is saved
+        header("Location: cart.php"); // Redirect to refresh page
+        exit;
     } elseif (isset($_POST['buy_all'])) {
-        // Placeholder for checkout logic
         echo "<p class='text-brown-600'>Proceeding to checkout (placeholder)...</p>";
+        // No redirect here, as this is a placeholder for checkout
     }
 }
 ?>
@@ -45,21 +61,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php
                 $total = 0;
                 foreach ($_SESSION['cart'] as $product_id => $item) {
-                    $delivery_charge = 10.00; // Fixed delivery charge per item
+                    $delivery_charge = 10.00;
                     $subtotal = ($item['price'] * $item['quantity']) + $delivery_charge;
                     $total += $subtotal;
 
                     echo '
                     <tr class="border-b text-brown-600">
                         <td class="p-3"><div class="h-16 w-16 bg-stone-200 rounded-lg flex items-center justify-center">Image</div></td>
-                        <td class="p-3">' . $item['name'] . '</td>
+                        <td class="p-3">' . htmlspecialchars($item['name']) . '</td>
                         <td class="p-3">
-                            <form method="POST" class="flex items-center">
-                                <input type="hidden" name="product_id" value="' . $product_id . '">
-                                <button type="submit" name="update_cart" class="p-1 bg-yellow-600 text-brown-800 rounded-l hover:bg-yellow-700">-</button>
-                                <input type="number" name="quantity" value="' . $item['quantity'] . '" min="1" max="' . $item['stock'] . '" class="w-12 text-center border-t border-b border-yellow-600 text-brown-600">
-                                <button type="submit" name="update_cart" class="p-1 bg-yellow-600 text-brown-800 rounded-r hover:bg-yellow-700">+</button>
-                            </form>
+                            <div class="flex items-center">
+                                <form method="POST" class="inline">
+                                    <input type="hidden" name="product_id" value="' . $product_id . '">
+                                    <input type="hidden" name="action" value="decrease">
+                                    <button type="submit" name="update_cart" class="p-1 bg-yellow-600 text-brown-800 rounded-l hover:bg-yellow-700">-</button>
+                                </form>
+                                <input type="number" value="' . $item['quantity'] . '" min="1" max="' . $item['stock'] . '" class="w-12 text-center border-t border-b border-yellow-600 text-brown-600" readonly>
+                                <form method="POST" class="inline">
+                                    <input type="hidden" name="product_id" value="' . $product_id . '">
+                                    <input type="hidden" name="action" value="increase">
+                                    <button type="submit" name="update_cart" class="p-1 bg-yellow-600 text-brown-800 rounded-r hover:bg-yellow-700">+</button>
+                                </form>
+                            </div>
                         </td>
                         <td class="p-3">$' . number_format($delivery_charge, 2) . '</td>
                         <td class="p-3">$' . number_format($item['price'], 2) . '</td>
@@ -67,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <td class="p-3">
                             <form method="POST" class="flex space-x-2">
                                 <input type="hidden" name="product_id" value="' . $product_id . '">
-                                <button type="submit" name="remove_item" class="bg-yellow-600 text-brown-800 p-2 rounded-lg hover:bg-yellow-700 transition duration-300">Remove</button>
+                                <button type="submit" name="remove_item" class="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition duration-300">Remove</button>
                                 <button type="submit" name="buy_item" class="bg-yellow-600 text-brown-800 p-2 rounded-lg hover:bg-yellow-700 transition duration-300">Buy</button>
                             </form>
                         </td>
