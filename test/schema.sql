@@ -929,7 +929,3 @@ BEGIN
     END IF;
 END;
 */
-alter trigger enforce_24_hour_advance_rule enable;
-alter trigger prevent_order_in_full_slot enable;
-alter trigger validate_collection_day enable;
-alter trigger trg_orderr_bi enable;

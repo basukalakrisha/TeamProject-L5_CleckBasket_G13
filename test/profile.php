@@ -15,10 +15,13 @@ $first_name = '';
 $last_name = '';
 $email = '';
 $phone_number = '';
-$address = '';
+$address_line1 = '';
+$address_line2 = '';
+$city = '';
+$postcode = '';
 
 // Fetch user details from the database
-$query_user_details = "SELECT first_name, last_name, email, contact, address FROM Users WHERE user_id = :user_id_bv";
+$query_user_details = "SELECT first_name, last_name, email, phone_number, address_line1, address_line2, city, postcode FROM Users WHERE user_id = :user_id_bv";
 $stmt_user_details = oci_parse($conn, $query_user_details);
 oci_bind_by_name($stmt_user_details, ":user_id_bv", $user_id);
 
@@ -28,8 +31,11 @@ if (oci_execute($stmt_user_details)) {
         $first_name = $user['FIRST_NAME'];
         $last_name = $user['LAST_NAME'];
         $email = $user['EMAIL'];
-        $phone_number = $user['CONTACT'];
-        $address = $user['ADDRESS'];
+        $phone_number = $user['PHONE_NUMBER'];
+        $address_line1 = $user['ADDRESS_LINE1'];
+        $address_line2 = $user['ADDRESS_LINE2'];
+        $city = $user['CITY'];
+        $postcode = $user['POSTCODE'];
     } else {
         // Should not happen if user_id in session is valid
         $_SESSION['profile_error'] = "Could not retrieve user details.";
@@ -47,64 +53,6 @@ $profile_error_message = $_SESSION['profile_error'] ?? null;
 if ($profile_success_message) unset($_SESSION['profile_success_message']);
 if ($profile_error_message) unset($_SESSION['profile_error']);
 
-// Pagination for orders
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$orders_per_page = 5;
-$offset = ($page - 1) * $orders_per_page;
-
-// Count total orders for pagination
-$query_count_orders = "SELECT COUNT(*) as total FROM ORDERR WHERE fk1_user_id = :user_id";
-$stmt_count_orders = oci_parse($conn, $query_count_orders);
-oci_bind_by_name($stmt_count_orders, ':user_id', $user_id);
-oci_execute($stmt_count_orders);
-$row_count = oci_fetch_assoc($stmt_count_orders);
-$total_orders = $row_count['TOTAL'];
-$total_pages = ceil($total_orders / $orders_per_page);
-oci_free_statement($stmt_count_orders);
-
-// Fetch user's orders with pagination
-$query_orders = "SELECT * FROM (
-                    SELECT a.*, rownum rnum FROM (
-                        SELECT o.order_id, o.total_amount, o.status, o.placed_on, cs.scheduled_day, cs.scheduled_date, cs.scheduled_time
-                        FROM ORDERR o
-                        JOIN COLLECTION_SLOT cs ON o.fk4_slot_id = cs.slot_id
-                        WHERE o.fk1_user_id = :user_id
-                        ORDER BY o.placed_on DESC
-                    ) a WHERE rownum <= :max_row
-                  ) WHERE rnum > :min_row";
-
-$stmt_orders = oci_parse($conn, $query_orders);
-oci_bind_by_name($stmt_orders, ':user_id', $user_id);
-$max_row = $offset + $orders_per_page;
-$min_row = $offset;
-oci_bind_by_name($stmt_orders, ':max_row', $max_row);
-oci_bind_by_name($stmt_orders, ':min_row', $min_row);
-oci_execute($stmt_orders);
-
-// Fetch orders into array
-$orders = [];
-while ($order = oci_fetch_assoc($stmt_orders)) {
-    $order_id = $order['ORDER_ID'];
-    
-    // Fetch products for this order
-    $query_products = "SELECT op.quantity, p.name, p.price
-                      FROM ORDER_PRODUCT op
-                      JOIN PRODUCT p ON op.product_id = p.product_id
-                      WHERE op.order_id = :order_id";
-    $stmt_products = oci_parse($conn, $query_products);
-    oci_bind_by_name($stmt_products, ':order_id', $order_id);
-    oci_execute($stmt_products);
-    
-    $products = [];
-    while ($product = oci_fetch_assoc($stmt_products)) {
-        $products[] = $product;
-    }
-    oci_free_statement($stmt_products);
-    
-    $order['products'] = $products;
-    $orders[] = $order;
-}
-oci_free_statement($stmt_orders);
 ?>
 
 <div class="container mx-auto px-6 py-8">
@@ -123,7 +71,7 @@ oci_free_statement($stmt_orders);
         </div>
     <?php endif; ?>
 
-    <div class="bg-white shadow-md rounded-lg p-8 mb-8">
+    <div class="bg-white shadow-md rounded-lg p-8">
         <h2 class="text-2xl font-semibold text-gray-700 mb-6">Account Details</h2>
         <form action="update_profile.php" method="POST">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -142,11 +90,25 @@ oci_free_statement($stmt_orders);
             </div>
             <div class="mb-6">
                 <label for="phone_number" class="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
-                <input type="text" id="phone_number" name="phone_number" value="<?php echo htmlspecialchars($phone_number); ?>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" pattern="[0-9]{10}" title="Must be exactly 10 digits">
+                <input type="text" id="phone_number" name="phone_number" value="<?php echo htmlspecialchars($phone_number); ?>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
             </div>
             <div class="mb-6">
-                <label for="address" class="block text-gray-700 text-sm font-bold mb-2">Address Line</label>
-                <input type="text" id="address" name="address" value="<?php echo htmlspecialchars($address); ?>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" maxlength="30">
+                <label for="address_line1" class="block text-gray-700 text-sm font-bold mb-2">Address Line 1</label>
+                <input type="text" id="address_line1" name="address_line1" value="<?php echo htmlspecialchars($address_line1); ?>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-6">
+                <label for="address_line2" class="block text-gray-700 text-sm font-bold mb-2">Address Line 2 (Optional)</label>
+                <input type="text" id="address_line2" name="address_line2" value="<?php echo htmlspecialchars($address_line2); ?>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label for="city" class="block text-gray-700 text-sm font-bold mb-2">City</label>
+                    <input type="text" id="city" name="city" value="<?php echo htmlspecialchars($city); ?>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <div>
+                    <label for="postcode" class="block text-gray-700 text-sm font-bold mb-2">Postcode</label>
+                    <input type="text" id="postcode" name="postcode" value="<?php echo htmlspecialchars($postcode); ?>" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
             </div>
             <div class="flex justify-end">
                 <button type="submit" name="update_details" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
@@ -154,141 +116,35 @@ oci_free_statement($stmt_orders);
                 </button>
             </div>
         </form>
-    </div>
 
-    <!-- Order History Section -->
-    <div class="bg-white shadow-md rounded-lg p-8">
-        <h2 class="text-2xl font-semibold text-gray-700 mb-6">Order History</h2>
-        
-        <?php if (empty($orders)): ?>
-            <div class="text-center py-8">
-                <p class="text-gray-600">You haven't placed any orders yet.</p>
-                <a href="shop.php" class="mt-4 inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                    Start Shopping
-                </a>
+        <hr class="my-8">
+
+        <h2 class="text-2xl font-semibold text-gray-700 mb-6">Change Password</h2>
+        <form action="update_profile.php" method="POST">
+            <div class="mb-4">
+                <label for="current_password" class="block text-gray-700 text-sm font-bold mb-2">Current Password</label>
+                <input type="password" id="current_password" name="current_password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
             </div>
-        <?php else: ?>
-            <div class="space-y-6">
-                <?php foreach ($orders as $order): ?>
-                    <div class="border border-gray-200 rounded-lg overflow-hidden">
-                        <div class="bg-gray-50 p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
-                            <div>
-                                <p class="text-sm text-gray-500">Order #<?php echo htmlspecialchars($order['ORDER_ID']); ?></p>
-                                <p class="text-sm text-gray-500">Placed on: <?php echo date('F j, Y', strtotime($order['PLACED_ON'])); ?></p>
-                            </div>
-                            <div class="mt-2 md:mt-0">
-                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                    <?php 
-                                    switch($order['STATUS']) {
-                                        case 'Booked':
-                                            echo 'bg-blue-100 text-blue-800';
-                                            break;
-                                        case 'Pending':
-                                            echo 'bg-yellow-100 text-yellow-800';
-                                            break;
-                                        case 'Delivered':
-                                            echo 'bg-green-100 text-green-800';
-                                            break;
-                                        case 'Cancelled':
-                                            echo 'bg-red-100 text-red-800';
-                                            break;
-                                        default:
-                                            echo 'bg-gray-100 text-gray-800';
-                                    }
-                                    ?>">
-                                    <?php echo htmlspecialchars($order['STATUS']); ?>
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div class="p-4 border-t border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-700 mb-2">Collection Details</h3>
-                            <p class="text-sm text-gray-600">
-                                <?php 
-                                    $date = new DateTime($order['SCHEDULED_DATE']);
-                                    echo htmlspecialchars($order['SCHEDULED_DAY']) . ', ' . $date->format('F j, Y'); 
-                                ?>
-                            </p>
-                            <p class="text-sm text-gray-600">Time: <?php echo htmlspecialchars(str_replace('-', ' - ', $order['SCHEDULED_TIME'])); ?></p>
-                        </div>
-                        
-                        <div class="p-4 border-t border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-700 mb-2">Order Items</h3>
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white divide-y divide-gray-200">
-                                        <?php foreach ($order['products'] as $product): ?>
-                                            <tr>
-                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                                    <?php echo htmlspecialchars($product['NAME']); ?>
-                                                </td>
-                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                    $<?php echo number_format($product['PRICE'], 2); ?>
-                                                </td>
-                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                    <?php echo htmlspecialchars($product['QUANTITY']); ?>
-                                                </td>
-                                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                    $<?php echo number_format($product['PRICE'] * $product['QUANTITY'], 2); ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        
-                        <div class="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
-                            <span class="text-lg font-semibold text-gray-700">Total:</span>
-                            <span class="text-lg font-bold text-gray-900">$<?php echo number_format($order['TOTAL_AMOUNT'], 2); ?></span>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
+            <div class="mb-4">
+                <label for="new_password" class="block text-gray-700 text-sm font-bold mb-2">New Password</label>
+                <input type="password" id="new_password" name="new_password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                <p class="text-xs text-gray-500 mt-1">Must be at least 8 characters, with uppercase, lowercase, number, and special character.</p>
             </div>
-            
-            <!-- Pagination -->
-            <?php if ($total_pages > 1): ?>
-                <div class="flex justify-center mt-8">
-                    <nav class="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                        <?php if ($page > 1): ?>
-                            <a href="?page=<?php echo $page - 1; ?>" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                <span class="sr-only">Previous</span>
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </a>
-                        <?php endif; ?>
-                        
-                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                            <a href="?page=<?php echo $i; ?>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium <?php echo $i === $page ? 'text-orange-600 bg-orange-50' : 'text-gray-700 hover:bg-gray-50'; ?>">
-                                <?php echo $i; ?>
-                            </a>
-                        <?php endfor; ?>
-                        
-                        <?php if ($page < $total_pages): ?>
-                            <a href="?page=<?php echo $page + 1; ?>" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                <span class="sr-only">Next</span>
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </a>
-                        <?php endif; ?>
-                    </nav>
-                </div>
-            <?php endif; ?>
-        <?php endif; ?>
+            <div class="mb-6">
+                <label for="confirm_new_password" class="block text-gray-700 text-sm font-bold mb-2">Confirm New Password</label>
+                <input type="password" id="confirm_new_password" name="confirm_new_password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+            </div>
+            <div class="flex justify-end">
+                <button type="submit" name="change_password" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Change Password
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <?php 
-if (isset($conn)) oci_close($conn);
+if(isset($conn)) oci_close($conn);
 require_once 'includes/footer.php'; 
 ?>
+

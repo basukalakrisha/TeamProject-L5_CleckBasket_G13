@@ -3,10 +3,10 @@
 
 
 
-$db_user = 'kaushik';
+$db_user = 'CleckBasket1';
 
 
-$db_pass = 'kaushik';
+$db_pass = 'CleckBasket1';
 
 $db_conn_str = '//localhost/XE';
 

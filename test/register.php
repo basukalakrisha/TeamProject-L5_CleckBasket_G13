@@ -25,28 +25,16 @@ if ($register_error) unset($_SESSION['register_error']);
 $form_data = $_SESSION['form_data'] ?? [];
 if (isset($_SESSION['form_data'])) unset($_SESSION['form_data']);
 
-// Connect to Oracle DB
-require_once 'php_logic/connect.php';
-
-// Fetch shop types from PRODUCT_CATEGORY table
-$shop_types = [];
-$query_shop_types = "SELECT name FROM PRODUCT_CATEGORY ORDER BY name";
-$stmt_shop_types = oci_parse($conn, $query_shop_types);
-if (!oci_execute($stmt_shop_types)) {
-    error_log("Failed to fetch shop types from PRODUCT_CATEGORY: " . print_r(oci_error($stmt_shop_types), true));
-} else {
-    while ($row = oci_fetch_assoc($stmt_shop_types)) {
-        $shop_types[] = $row['NAME'];
-    }
-}
-oci_free_statement($stmt_shop_types);
-
 include_once 'includes/header.php';
 ?>
 
 <div class="container mx-auto mt-10">
     <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-lg mx-auto">
         <h2 class="text-2xl font-bold text-center mb-2">Register</h2>
+        <div class="text-center mb-6">
+            <span class="text-orange-500 border-b-2 border-orange-500 pb-1 px-2 text-sm font-semibold">CUSTOMER</span>
+            <span class="text-gray-500 ml-4 text-sm font-semibold">TRADER</span>
+        </div>
 
         <?php if ($register_error): ?>
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -118,11 +106,16 @@ include_once 'includes/header.php';
                     <label for="shop_type" class="block text-gray-700 text-sm font-bold mb-2">Shop Type</label>
                     <select id="shop_type" name="shop_type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                         <option value="">Select Shop Type</option>
-                        <?php foreach ($shop_types as $type): ?>
-                            <option value="<?php echo htmlspecialchars($type); ?>" <?php echo ($form_data['shop_type'] ?? '') === $type ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($type); ?>
-                            </option>
-                        <?php endforeach; ?>
+                        <option value="Grocery" <?php if (($form_data['shop_type'] ?? '') == 'Grocery') echo 'selected'; ?>>Grocery</option>
+                        <option value="Electronics" <?php if (($form_data['shop_type'] ?? '') == 'Electronics') echo 'selected'; ?>>Electronics</option>
+                        <option value="Clothing" <?php if (($form_data['shop_type'] ?? '') == 'Clothing') echo 'selected'; ?>>Clothing</option>
+                        <option value="Home & Garden" <?php if (($form_data['shop_type'] ?? '') == 'Home & Garden') echo 'selected'; ?>>Home & Garden</option>
+                        <option value="Beauty & Health" <?php if (($form_data['shop_type'] ?? '') == 'Beauty & Health') echo 'selected'; ?>>Beauty & Health</option>
+                        <option value="Sports & Outdoors" <?php if (($form_data['shop_type'] ?? '') == 'Sports & Outdoors') echo 'selected'; ?>>Sports & Outdoors</option>
+                        <option value="Toys & Games" <?php if (($form_data['shop_type'] ?? '') == 'Toys & Games') echo 'selected'; ?>>Toys & Games</option>
+                        <option value="Books & Stationery" <?php if (($form_data['shop_type'] ?? '') == 'Books & Stationery') echo 'selected'; ?>>Books & Stationery</option>
+                        <option value="Food & Beverage" <?php if (($form_data['shop_type'] ?? '') == 'Food & Beverage') echo 'selected'; ?>>Food & Beverage</option>
+                        <option value="Other" <?php if (($form_data['shop_type'] ?? '') == 'Other') echo 'selected'; ?>>Other</option>
                     </select>
                 </div>
             </div>
@@ -182,8 +175,4 @@ include_once 'includes/header.php';
     document.getElementById('usertype').dispatchEvent(new Event('change'));
 </script>
 
-<?php 
-// Close Oracle connection
-if (isset($conn)) oci_close($conn);
-include_once 'includes/footer.php'; 
-?>
+<?php include_once 'includes/footer.php'; ?>
