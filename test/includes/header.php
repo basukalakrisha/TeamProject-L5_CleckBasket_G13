@@ -31,15 +31,13 @@ $is_trader = isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && i
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CleckBasket</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/style.css"> <!-- Optional: for custom styles -->
 </head>
 
 <body class="bg-gray-100">
     <header class="bg-white shadow-md sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
-            <a href="<?php echo $is_trader ? 'trader_profile.php' : 'index.php'; ?>" class="flex items-center space-x-2 text-xl font-bold text-orange-500">
-                <img src="assets/images/CLeckBasketLogo.jpg" alt="CleckBasket Logo" class="h-12 w-auto">
-                <span>CleckBasket</span>
-            </a>
+            <a href="<?php echo $is_trader ? 'trader_profile.php' : 'index.php'; ?>" class="text-xl font-bold text-orange-500">CleckBasket</a>
             <div class="flex items-center space-x-4">
                 <?php if ($is_trader): ?>
                     <!-- Trader-specific navigation -->
